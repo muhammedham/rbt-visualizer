@@ -54,9 +54,9 @@ export class RedBlackTree {
     return clone;
   }
 
-  // Helper to make the text read better when a node might be empty
+  // Helper to make the empty nodes sound less scary
   private nodeName(n: TreeNode): string {
-    return n.isNil ? "an Empty/NIL node (which counts as BLACK)" : `node ${n.val}`;
+    return n.isNil ? "an Empty space (which always acts like BLACK paint)" : `node ${n.val}`;
   }
 
   // --- INSERTION LOGIC ---
@@ -69,19 +69,19 @@ export class RedBlackTree {
     let y = this.nil;
     let x = this.root;
 
-    this.takeSnapshot(`Starting to insert node ${val}. We always start at the top (the Root) to find the correct spot.`);
+    this.takeSnapshot(`Starting to add node ${val}. We start at the very top of our toy (the Root) to see where it fits.`);
     
     while (x !== this.nil) {
       y = x;
       const direction = z.val < x.val ? 'left' : 'right';
-      const reason = z.val < x.val ? 'smaller' : 'larger';
+      const reason = z.val < x.val ? 'smaller' : 'bigger';
       
-      this.takeSnapshot(`Comparing ${val} with node ${x.val}. Because ${val} is ${reason}, we move down to the ${direction}.`, [x.id]);
+      this.takeSnapshot(`We compare ${val} with node ${x.val}. Because ${val} is ${reason}, we move down the ${direction} branch.`, [x.id]);
       
       if (z.val < x.val) x = x.left;
       else if (z.val > x.val) x = x.right;
       else {
-        this.takeSnapshot(`Node ${val} already exists in the tree! Red-Black trees usually don't allow duplicates, so we are stopping here.`);
+        this.takeSnapshot(`Node ${val} is already on the toy! We don't allow double numbers, so we stop here.`);
         return this.snapshots;
       }
     }
@@ -91,77 +91,76 @@ export class RedBlackTree {
     else if (z.val < y.val) y.left = z;
     else y.right = z;
 
-    this.takeSnapshot(`Found an empty spot! Inserted node ${val}. Rule: All brand new nodes always start colored RED.`, [z.id]);
+    this.takeSnapshot(`We found an empty spot! We hang node ${val} here. Magic Rule: Every new node always starts with RED paint.`, [z.id]);
     this.insertFixup(z);
     return this.snapshots;
   }
 
   private insertFixup(z: TreeNode) {
     while (z.parent.color === 'RED') {
-      // We have a violation: A RED node cannot have a RED parent.
       
       if (z.parent === z.parent.parent.left) {
         let y = z.parent.parent.right; // Uncle
         
-        this.takeSnapshot(`Rule Violation! Node ${z.val} and its Parent (${z.parent.val}) are BOTH RED. To figure out how to fix this, we look at the Uncle (${this.nodeName(y)}).`, [z.id, z.parent.id, y.id]);
+        this.takeSnapshot(`🚨 ALARM! Node ${z.val} is RED, and the node holding it (its Parent, ${z.parent.val}) is ALSO RED. Two RED nodes cannot touch! We look at the Uncle (${this.nodeName(y)}) to see how to fix this.`, [z.id, z.parent.id, y.id]);
 
         if (y.color === 'RED') {
-          // CASE 1: Uncle is RED -> We only need to recolor.
+          // CASE 1: Uncle is RED
           z.parent.color = 'BLACK';
           y.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Because the Uncle is RED, we can fix the violation just by repainting: Parent and Uncle become BLACK, and Grandparent becomes RED.`, [z.parent.id, y.id, z.parent.parent.id]);
+          this.takeSnapshot(`The Uncle is RED! Easy fix: we just use our magic paint. We paint the Parent and Uncle BLACK, and the Grandparent RED. The alarm stops here!`, [z.parent.id, y.id, z.parent.parent.id]);
           z = z.parent.parent;
           
           if (z.color === 'RED' && z.parent.color === 'RED') {
-             this.takeSnapshot(`But wait! Now the Grandparent (node ${z.val}) is RED, and its parent might also be RED. We have to check the rules again higher up the tree.`, [z.id]);
+             this.takeSnapshot(`But wait... we just painted the Grandparent (node ${z.val}) RED. We have to check if it's accidentally touching another RED node higher up!`, [z.id]);
           }
           
         } else {
-          // CASE 2 & 3: Uncle is BLACK -> We must rotate.
+          // CASE 2 & 3: Uncle is BLACK
           if (z === z.parent.right) {
             z = z.parent;
-            this.takeSnapshot(`Because the Uncle is BLACK, repainting isn't enough. Node ${z.right.val} forms a "zig-zag" shape (inner child). We must do a Left Rotation on node ${z.val} to straighten them into a line.`, [z.id]);
+            this.takeSnapshot(`The Uncle is BLACK! Paint isn't enough. Node ${z.right.val} makes a crooked 'zig-zag' shape. We must Rotate (twist the branch) on node ${z.val} to straighten it.`, [z.id]);
             this.leftRotate(z);
-            this.takeSnapshot(`Left Rotation complete. They are now in a straight line, but we still have two RED nodes touching.`, [z.parent.id]);
+            this.takeSnapshot(`Rotation finished. They are in a straight line now, but the two RED nodes are still touching!`, [z.parent.id]);
           }
           
           z.parent.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`To fix the straight line, we repaint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
+          this.takeSnapshot(`To fix this, we use our paint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
           
-          this.takeSnapshot(`Finally, we perform a Right Rotation on the Grandparent (${z.parent.parent.val}) to balance the weight of the tree.`, [z.parent.parent.id]);
+          this.takeSnapshot(`Finally, one side of the toy is too heavy! We Rotate (spin the branch) on the Grandparent (${z.parent.parent.val}) to balance the weight. The RED nodes are separated!`, [z.parent.parent.id]);
           this.rightRotate(z.parent.parent);
         }
       } else {
-        // Symmetric right side (exact same logic, opposite directions)
+        // Symmetric right side
         let y = z.parent.parent.left; // Uncle
         
-        this.takeSnapshot(`Rule Violation! Node ${z.val} and its Parent (${z.parent.val}) are BOTH RED. To figure out how to fix this, we look at the Uncle (${this.nodeName(y)}).`, [z.id, z.parent.id, y.id]);
+        this.takeSnapshot(`🚨 ALARM! Node ${z.val} is RED, and the node holding it (its Parent, ${z.parent.val}) is ALSO RED. Two RED nodes cannot touch! We look at the Uncle (${this.nodeName(y)}) to see how to fix this.`, [z.id, z.parent.id, y.id]);
 
         if (y.color === 'RED') {
           z.parent.color = 'BLACK';
           y.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Because the Uncle is RED, we can fix the violation just by repainting: Parent and Uncle become BLACK, and Grandparent becomes RED.`, [z.parent.id, y.id, z.parent.parent.id]);
+          this.takeSnapshot(`The Uncle is RED! Easy fix: we just use our magic paint. We paint the Parent and Uncle BLACK, and the Grandparent RED. The alarm stops here!`, [z.parent.id, y.id, z.parent.parent.id]);
           z = z.parent.parent;
           
           if (z.color === 'RED' && z.parent.color === 'RED') {
-             this.takeSnapshot(`But wait! Now the Grandparent (node ${z.val}) is RED, and its parent might also be RED. We have to check the rules again higher up the tree.`, [z.id]);
+             this.takeSnapshot(`But wait... we just painted the Grandparent (node ${z.val}) RED. We have to check if it's accidentally touching another RED node higher up!`, [z.id]);
           }
 
         } else {
           if (z === z.parent.left) {
             z = z.parent;
-            this.takeSnapshot(`Because the Uncle is BLACK, repainting isn't enough. Node ${z.left.val} forms a "zig-zag" shape (inner child). We must do a Right Rotation on node ${z.val} to straighten them into a line.`, [z.id]);
+            this.takeSnapshot(`The Uncle is BLACK! Paint isn't enough. Node ${z.left.val} makes a crooked 'zig-zag' shape. We must Rotate (twist the branch) on node ${z.val} to straighten it.`, [z.id]);
             this.rightRotate(z);
-            this.takeSnapshot(`Right Rotation complete. They are now in a straight line, but we still have two RED nodes touching.`, [z.parent.id]);
+            this.takeSnapshot(`Rotation finished. They are in a straight line now, but the two RED nodes are still touching!`, [z.parent.id]);
           }
           z.parent.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`To fix the straight line, we repaint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
+          this.takeSnapshot(`To fix this, we use our paint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
           
-          this.takeSnapshot(`Finally, we perform a Left Rotation on the Grandparent (${z.parent.parent.val}) to balance the weight of the tree.`, [z.parent.parent.id]);
+          this.takeSnapshot(`Finally, one side of the toy is too heavy! We Rotate (spin the branch) on the Grandparent (${z.parent.parent.val}) to balance the weight. The RED nodes are separated!`, [z.parent.parent.id]);
           this.leftRotate(z.parent.parent);
         }
       }
@@ -169,9 +168,9 @@ export class RedBlackTree {
     
     if (this.root.color === 'RED') {
       this.root.color = 'BLACK';
-      this.takeSnapshot(`Final Rule Check: The Root node must ALWAYS be BLACK. We repaint the root node (${this.root.val}) to BLACK. The tree is now balanced!`, [this.root.id]);
+      this.takeSnapshot(`Final Toy Rule: The very top node (the Root) must ALWAYS be BLACK. We paint the root node (${this.root.val}) BLACK. The toy is perfectly balanced!`, [this.root.id]);
     } else {
-      this.takeSnapshot(`Final Rule Check: The Root is already BLACK, and no RED nodes are touching. The tree is completely balanced!`);
+      this.takeSnapshot(`Final Toy Rule: The Root is already BLACK, and no RED nodes are touching. The toy is perfectly balanced!`);
     }
   }
 
