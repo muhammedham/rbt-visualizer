@@ -15,7 +15,6 @@ An interactive, step-by-step visualizer for Red-Black Tree insertion and deletio
 - **Execution history** — a session log of every operation performed on the tree.
 - **Animated tree layout** — nodes and edges animate smoothly between states using Framer Motion, with active nodes highlighted at each step.
 
-![Step-by-step walkthrough](./ss2.png)
 
 ## Tech stack
 
