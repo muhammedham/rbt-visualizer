@@ -13,7 +13,7 @@ type LayoutNode = {
 };
 
 export default function TreeCanvas({ tree, activeNodeIds }: { tree: TreeNode, activeNodeIds: number[] }) {
-  
+
   const layout = useMemo(() => {
     const flattenLayout = (node: TreeNode, x: number, y: number, dx: number, dy: number, pX?: number, pY?: number): LayoutNode[] => {
       if (!node || node.isNil) return [];
@@ -28,7 +28,7 @@ export default function TreeCanvas({ tree, activeNodeIds }: { tree: TreeNode, ac
   }, [tree]);
 
   return (
-    <div className="w-full h-full relative overflow-auto bg-gray-950 flex justify-center">
+    <div className="w-full h-full relative overflow-auto bg-[#232329] flex justify-center">
       <svg width="1000" height="600" className="min-w-max">
         {/* Edges */}
         {layout.map(node => node.parentX && (
@@ -36,7 +36,7 @@ export default function TreeCanvas({ tree, activeNodeIds }: { tree: TreeNode, ac
             key={`edge-${node.id}`}
             x1={node.parentX} y1={node.parentY}
             animate={{ x1: node.parentX, y1: node.parentY, x2: node.x, y2: node.y }}
-            stroke="#374151" strokeWidth="2"
+            stroke="#494850" strokeWidth="2"
             transition={{ duration: 0.5 }}
           />
         ))}
@@ -56,15 +56,15 @@ export default function TreeCanvas({ tree, activeNodeIds }: { tree: TreeNode, ac
                 <motion.circle
                   r="22"
                   animate={{
-                    fill: node.color === 'RED' ? '#DC2626' : '#111827',
-                    stroke: isActive ? '#FBBF24' : node.color === 'RED' ? '#EF4444' : '#374151',
+                    fill: node.color === 'RED' ? '#B23A5C' : '#2C2C34',
+                    stroke: isActive ? '#D8D8F6' : node.color === 'RED' ? '#D1608A' : '#494850',
                     strokeWidth: isActive ? 4 : 2,
                   }}
                   className="shadow-xl"
                 />
                 <text
                   y="5" textAnchor="middle"
-                  className="text-sm font-bold pointer-events-none fill-gray-100 font-mono"
+                  className="text-sm font-bold pointer-events-none fill-[#D8D8F6] font-mono"
                 >
                   {node.val}
                 </text>

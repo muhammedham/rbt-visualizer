@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Red-Black Tree Visualizer
 
-## Getting Started
+An interactive, step-by-step visualizer for Red-Black Tree insertion and deletion. Every rotation, recoloring, and fixup case is animated and narrated in plain language, so you can watch the algorithm restore its invariants one step at a time instead of just reading pseudocode.
 
-First, run the development server:
+**Live demo:** [rbt-visualizer.vercel.app](https://rbt-visualizer.vercel.app/)
+
+![Visualizer overview](./ss1.png)
+
+## Features
+
+- **Full insert & delete** — a complete CLRS-style implementation, including all rotation and recoloring cases for both `insertFixup` and `deleteFixup`.
+- **Step-by-step playback** — scrub through every intermediate state of an operation with play/pause, step forward/back, jump-to-start, and jump-to-end controls.
+- **Plain-language narration** — each step explains *what* is happening and *why*, from the initial BST search down to the specific fixup case being applied.
+- **Live invariant tracker** — a running check of the three Red-Black properties (root is black, no red-red conflicts, and a consistent black-height) that updates on every step, so you can see exactly when a violation appears and when it's resolved.
+- **Execution history** — a session log of every operation performed on the tree.
+- **Animated tree layout** — nodes and edges animate smoothly between states using Framer Motion, with active nodes highlighted at each step.
+
+![Step-by-step walkthrough](./ss2.png)
+
+## Tech stack
+
+| Layer | Tool |
+|---|---|
+| Framework | Next.js (App Router) + React |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Animation | Framer Motion |
+| Icons | lucide-react |
+| Font | [DM Sans](https://fonts.google.com/specimen/DM+Sans) / DM Mono |
+
+## Getting started
 
 ```bash
+# install dependencies
+npm install
+
+# run the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+.
+├── app/
+│   └── page.tsx                  # entry point, renders the visualizer
+├── components/
+│   ├── RedBlackTreeVisualizer.tsx  # UI shell: controls, sidebar, invariant tracker
+│   └── TreeCanvas.tsx              # SVG rendering & layout of the tree
+└── lib/
+    └── rbt.ts                      # Red-Black Tree engine (insert, delete, rotations, snapshots)
+```
 
-## Learn More
+### How the animation works
 
-To learn more about Next.js, take a look at the following resources:
+The tree engine (`lib/rbt.ts`) never renders anything directly. Instead, every meaningful mutation — a comparison, a recolor, a rotation — calls `takeSnapshot()`, which deep-clones the current tree state along with a human-readable message and the IDs of any nodes involved in that step. An `insert()` or `delete()` call returns the full array of snapshots for that operation, and the UI simply steps through them. This keeps the algorithm implementation and the animation timeline completely decoupled.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The interface uses a custom dark palette purpose-built for this project, paired with DM Sans for UI text and a monospace face for node values and logs to keep data visually distinct from narration.
 
-## Deploy on Vercel
+| Color | Hex | Usage |
+|---|---|---|
+| ⬛ | `#2C2C34` | App background, black nodes |
+| ⬛ | `#494850` | Panels, borders, edges |
+| ⬛ | `#978897` | Muted text, secondary states |
+| 🟪 | `#B18FCF` | Primary accent, active highlights |
+| ⬜ | `#D8D8F6` | Primary text, emphasis |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Roadmap
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Bulk import (build a tree from a list of values at once)
+- [ ] Adjustable playback speed
+- [ ] Export the current tree state as an image
+
+## License
+
+MIT
