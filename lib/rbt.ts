@@ -46,12 +46,17 @@ export class RedBlackTree {
   private cloneTree(node: TreeNode, parentClone: TreeNode, newNil: TreeNode): TreeNode {
     if (node.isNil) return newNil;
     const clone = new TreeNode(node.val);
-    clone.id = node.id; // Retain ID for Framer Motion tracking
+    clone.id = node.id;
     clone.color = node.color;
     clone.parent = parentClone;
     clone.left = this.cloneTree(node.left, clone, newNil);
     clone.right = this.cloneTree(node.right, clone, newNil);
     return clone;
+  }
+
+  // Helper to make the text read better when a node might be empty
+  private nodeName(n: TreeNode): string {
+    return n.isNil ? "an Empty/NIL node (which counts as BLACK)" : `node ${n.val}`;
   }
 
   // --- INSERTION LOGIC ---
@@ -64,14 +69,19 @@ export class RedBlackTree {
     let y = this.nil;
     let x = this.root;
 
-    this.takeSnapshot(`Preparing to insert ${val}`);
+    this.takeSnapshot(`Starting to insert node ${val}. We always start at the top (the Root) to find the correct spot.`);
+    
     while (x !== this.nil) {
       y = x;
-      this.takeSnapshot(`Comparing ${val} with ${x.val}`, [x.id]);
+      const direction = z.val < x.val ? 'left' : 'right';
+      const reason = z.val < x.val ? 'smaller' : 'larger';
+      
+      this.takeSnapshot(`Comparing ${val} with node ${x.val}. Because ${val} is ${reason}, we move down to the ${direction}.`, [x.id]);
+      
       if (z.val < x.val) x = x.left;
       else if (z.val > x.val) x = x.right;
       else {
-        this.takeSnapshot(`Value ${val} already exists. Aborting.`);
+        this.takeSnapshot(`Node ${val} already exists in the tree! Red-Black trees usually don't allow duplicates, so we are stopping here.`);
         return this.snapshots;
       }
     }
@@ -81,59 +91,87 @@ export class RedBlackTree {
     else if (z.val < y.val) y.left = z;
     else y.right = z;
 
-    this.takeSnapshot(`Inserted ${val} as RED`, [z.id]);
+    this.takeSnapshot(`Found an empty spot! Inserted node ${val}. Rule: All brand new nodes always start colored RED.`, [z.id]);
     this.insertFixup(z);
     return this.snapshots;
   }
 
   private insertFixup(z: TreeNode) {
     while (z.parent.color === 'RED') {
+      // We have a violation: A RED node cannot have a RED parent.
+      
       if (z.parent === z.parent.parent.left) {
         let y = z.parent.parent.right; // Uncle
+        
+        this.takeSnapshot(`Rule Violation! Node ${z.val} and its Parent (${z.parent.val}) are BOTH RED. To figure out how to fix this, we look at the Uncle (${this.nodeName(y)}).`, [z.id, z.parent.id, y.id]);
+
         if (y.color === 'RED') {
+          // CASE 1: Uncle is RED -> We only need to recolor.
           z.parent.color = 'BLACK';
           y.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Uncle (${y.val}) is RED. Recolored parent, uncle, and grandparent.`, [z.parent.id, y.id, z.parent.parent.id]);
+          this.takeSnapshot(`Because the Uncle is RED, we can fix the violation just by repainting: Parent and Uncle become BLACK, and Grandparent becomes RED.`, [z.parent.id, y.id, z.parent.parent.id]);
           z = z.parent.parent;
+          
+          if (z.color === 'RED' && z.parent.color === 'RED') {
+             this.takeSnapshot(`But wait! Now the Grandparent (node ${z.val}) is RED, and its parent might also be RED. We have to check the rules again higher up the tree.`, [z.id]);
+          }
+          
         } else {
+          // CASE 2 & 3: Uncle is BLACK -> We must rotate.
           if (z === z.parent.right) {
             z = z.parent;
+            this.takeSnapshot(`Because the Uncle is BLACK, repainting isn't enough. Node ${z.right.val} forms a "zig-zag" shape (inner child). We must do a Left Rotation on node ${z.val} to straighten them into a line.`, [z.id]);
             this.leftRotate(z);
-            this.takeSnapshot(`Node is inner child. Left Rotate on ${z.val}.`, [z.id]);
+            this.takeSnapshot(`Left Rotation complete. They are now in a straight line, but we still have two RED nodes touching.`, [z.parent.id]);
           }
+          
           z.parent.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Recolored parent and grandparent. Preparing Right Rotate on ${z.parent.parent.val}.`, [z.parent.id, z.parent.parent.id]);
+          this.takeSnapshot(`To fix the straight line, we repaint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
+          
+          this.takeSnapshot(`Finally, we perform a Right Rotation on the Grandparent (${z.parent.parent.val}) to balance the weight of the tree.`, [z.parent.parent.id]);
           this.rightRotate(z.parent.parent);
-          this.takeSnapshot(`Right Rotate complete.`, [z.parent.id]);
         }
       } else {
-        // Symmetric right side
-        let y = z.parent.parent.left;
+        // Symmetric right side (exact same logic, opposite directions)
+        let y = z.parent.parent.left; // Uncle
+        
+        this.takeSnapshot(`Rule Violation! Node ${z.val} and its Parent (${z.parent.val}) are BOTH RED. To figure out how to fix this, we look at the Uncle (${this.nodeName(y)}).`, [z.id, z.parent.id, y.id]);
+
         if (y.color === 'RED') {
           z.parent.color = 'BLACK';
           y.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Uncle (${y.val}) is RED. Recolored parent, uncle, and grandparent.`, [z.parent.id, y.id, z.parent.parent.id]);
+          this.takeSnapshot(`Because the Uncle is RED, we can fix the violation just by repainting: Parent and Uncle become BLACK, and Grandparent becomes RED.`, [z.parent.id, y.id, z.parent.parent.id]);
           z = z.parent.parent;
+          
+          if (z.color === 'RED' && z.parent.color === 'RED') {
+             this.takeSnapshot(`But wait! Now the Grandparent (node ${z.val}) is RED, and its parent might also be RED. We have to check the rules again higher up the tree.`, [z.id]);
+          }
+
         } else {
           if (z === z.parent.left) {
             z = z.parent;
+            this.takeSnapshot(`Because the Uncle is BLACK, repainting isn't enough. Node ${z.left.val} forms a "zig-zag" shape (inner child). We must do a Right Rotation on node ${z.val} to straighten them into a line.`, [z.id]);
             this.rightRotate(z);
-            this.takeSnapshot(`Node is inner child. Right Rotate on ${z.val}.`, [z.id]);
+            this.takeSnapshot(`Right Rotation complete. They are now in a straight line, but we still have two RED nodes touching.`, [z.parent.id]);
           }
           z.parent.color = 'BLACK';
           z.parent.parent.color = 'RED';
-          this.takeSnapshot(`Recolored parent and grandparent. Preparing Left Rotate on ${z.parent.parent.val}.`, [z.parent.id, z.parent.parent.id]);
+          this.takeSnapshot(`To fix the straight line, we repaint: Parent (${z.parent.val}) becomes BLACK, Grandparent (${z.parent.parent.val}) becomes RED.`, [z.parent.id, z.parent.parent.id]);
+          
+          this.takeSnapshot(`Finally, we perform a Left Rotation on the Grandparent (${z.parent.parent.val}) to balance the weight of the tree.`, [z.parent.parent.id]);
           this.leftRotate(z.parent.parent);
-          this.takeSnapshot(`Left Rotate complete.`, [z.parent.id]);
         }
       }
     }
+    
     if (this.root.color === 'RED') {
       this.root.color = 'BLACK';
-      this.takeSnapshot(`Root must be BLACK. Recolored root.`, [this.root.id]);
+      this.takeSnapshot(`Final Rule Check: The Root node must ALWAYS be BLACK. We repaint the root node (${this.root.val}) to BLACK. The tree is now balanced!`, [this.root.id]);
+    } else {
+      this.takeSnapshot(`Final Rule Check: The Root is already BLACK, and no RED nodes are touching. The tree is completely balanced!`);
     }
   }
 
@@ -161,7 +199,4 @@ export class RedBlackTree {
     y.right = x;
     x.parent = y;
   }
-  
-  // Note: Full CLRS delete logic follows a similar pattern using `transplant` and `deleteFixup`.
-  // Added standard insert logic here to keep the sandbox focused.
 }
