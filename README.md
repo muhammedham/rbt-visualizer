@@ -74,6 +74,8 @@ The interface uses a custom dark palette purpose-built for this project, paired 
 - [ ] Adjustable playback speed
 - [ ] Export the current tree state as an image
 
-## License
-
-MIT
+## Author
+ 
+**Muhammed Hamadin**
+GitHub: [@muhammedham](https://github.com/muhammedham)
+Email: [hamadin2005@gmail.com](mailto:hamadin2005@gmail.com)
