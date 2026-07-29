@@ -186,17 +186,17 @@ export class RedBlackTree {
     // 2. Standard BST Deletion
     if (z.left === this.nil) {
       x = z.right;
-      this.takeSnapshot(`Node ${z.val} has no left child. We can simply replace it with its right child (${this.nodeName(x)}).`, [z.id]);
+      this.takeSnapshot(`Node ${z.val} has no left child. We replace it directly with its right child (${this.nodeName(x)}).`, [z.id]);
       this.transplant(z, z.right);
     } else if (z.right === this.nil) {
       x = z.left;
-      this.takeSnapshot(`Node ${z.val} has no right child. We can simply replace it with its left child (${this.nodeName(x)}).`, [z.id]);
+      this.takeSnapshot(`Node ${z.val} has no right child. We replace it directly with its left child (${this.nodeName(x)}).`, [z.id]);
       this.transplant(z, z.left);
     } else {
       y = this.minimum(z.right);
       yOriginalColor = y.color;
       x = y.right;
-      this.takeSnapshot(`Node ${z.val} has two children. To maintain BST ordering, we must find its Successor (the smallest node in its right subtree), which is Node ${y.val}. We will replace ${z.val} with ${y.val}.`, [z.id, y.id]);
+      this.takeSnapshot(`Node ${z.val} has two children. Its Successor is Node ${y.val}. We will replace ${z.val} with ${y.val}.`, [z.id, y.id]);
       
       if (y.parent === z) {
         x.parent = y;
@@ -208,15 +208,20 @@ export class RedBlackTree {
       this.transplant(z, y);
       y.left = z.left;
       y.left.parent = y;
-      y.color = z.color;
+      
+    
+      y.color = z.color; 
     }
+
+    
+    this.takeSnapshot(`Node ${val} has been physically removed. The replacement node is now in its place. Let's check the rules.`);
 
     // 3. Fixup if necessary
     if (yOriginalColor === 'BLACK') {
-      this.takeSnapshot(`The node we physically removed/moved was BLACK. This means all paths passing through this location just lost one BLACK node, violating the 'Black Height' invariant. To fix this, we conceptually assign an 'extra black' weight to the replacement node (${this.nodeName(x)}) and begin the fixup process.`, [x.id]);
+      this.takeSnapshot(`The node we removed/moved was BLACK, which broke the 'Black Height' invariant. We assign an 'extra black' weight to Node ${x.isNil ? '(NIL)' : x.val} and start the fixup.`, [x.id]);
       this.deleteFixup(x);
     } else {
-      this.takeSnapshot(`The node we physically removed/moved was RED. Removing a RED node does not affect the Black Height invariant, nor can it create consecutive RED nodes. No restructuring is necessary.`);
+      this.takeSnapshot(`The node we removed was RED. Removing a RED node does not affect the Black Height invariant. The tree is already perfectly balanced!`);
     }
 
     return this.snapshots;
@@ -227,78 +232,91 @@ export class RedBlackTree {
       if (x === x.parent.left) {
         let w = x.parent.right; // Sibling
         
-        this.takeSnapshot(`Node ${x.isNil ? '(NIL)' : x.val} currently holds the 'extra black' weight. We examine its Sibling (${w.val}) to determine how to distribute this weight.`, [x.id, w.id]);
+        this.takeSnapshot(`Node ${x.isNil ? '(NIL)' : x.val} holds the 'extra black'. Its Sibling is Node ${w.val}.`, [x.id, w.id]);
 
         if (w.color === 'RED') {
           // Case 1
           w.color = 'BLACK';
           x.parent.color = 'RED';
-          this.takeSnapshot(`Case 1: The Sibling is RED. We recolor the Sibling to BLACK and the Parent to RED, then perform a Left Rotation on the Parent. This converts the situation into one of the other cases (where the Sibling is BLACK) without altering the Black Height.`, [w.id, x.parent.id]);
+          this.takeSnapshot(`Case 1: Sibling is RED. We recolor Sibling (BLACK) and Parent (RED), then Left Rotate the Parent.`, [w.id, x.parent.id]);
           this.leftRotate(x.parent);
           w = x.parent.right;
+       
+          this.takeSnapshot(`Rotation complete. Now we proceed to resolve the new configuration.`);
         }
 
         if (w.left.color === 'BLACK' && w.right.color === 'BLACK') {
           // Case 2
           w.color = 'RED';
           x = x.parent;
-          this.takeSnapshot(`Case 2: The Sibling is BLACK, and both of its children are BLACK. We can resolve this locally by removing one black weight from both the Sibling (making it RED) and Node ${x.isNil ? '(NIL)' : x.val}. This shifts the 'extra black' weight up to their Parent. We now repeat the process on the Parent.`, [w.id, x.id]);
+          this.takeSnapshot(`Case 2: Sibling is BLACK and its children are BLACK. We color Sibling RED and move the 'extra black' up to the Parent.`, [w.id, x.id]);
         } else {
           if (w.right.color === 'BLACK') {
             // Case 3
             w.left.color = 'BLACK';
             w.color = 'RED';
-            this.takeSnapshot(`Case 3: The Sibling is BLACK, its right child is BLACK, but its left (inner) child is RED. We swap the colors of the Sibling and its left child, then perform a Right Rotation on the Sibling. This transforms the tree into Case 4.`, [w.id, w.left.id]);
+            this.takeSnapshot(`Case 3: Sibling is BLACK, right child is BLACK, left is RED. We swap colors and Right Rotate the Sibling.`, [w.id, w.left.id]);
             this.rightRotate(w);
             w = x.parent.right;
+        
+            this.takeSnapshot(`Rotation complete. We transition to Case 4.`);
           }
           
           // Case 4
           w.color = x.parent.color;
           x.parent.color = 'BLACK';
           w.right.color = 'BLACK';
-          this.takeSnapshot(`Case 4: The Sibling is BLACK, and its right (outer) child is RED. We perform a terminal fix: We recolor the Sibling to the Parent's color, color the Parent BLACK, color the Sibling's right child BLACK, and perform a Left Rotation on the Parent. This perfectly redistributes the 'extra black' weight across the branches.`, [w.id, x.parent.id, w.right.id]);
+          this.takeSnapshot(`Case 4: Sibling is BLACK, right child is RED. We do terminal recoloring before the final Left Rotate.`, [w.id, x.parent.id, w.right.id]);
           this.leftRotate(x.parent);
           x = this.root; // Terminate loop
         }
       } else {
         // Symmetric right side
         let w = x.parent.left;
-        this.takeSnapshot(`Node ${x.isNil ? '(NIL)' : x.val} currently holds the 'extra black' weight. We examine its Sibling (${w.val}) to determine how to distribute this weight.`, [x.id, w.id]);
+        this.takeSnapshot(`Node ${x.isNil ? '(NIL)' : x.val} holds the 'extra black'. Its Sibling is Node ${w.val}.`, [x.id, w.id]);
 
         if (w.color === 'RED') {
           w.color = 'BLACK';
           x.parent.color = 'RED';
-          this.takeSnapshot(`Case 1: The Sibling is RED. We recolor the Sibling to BLACK and the Parent to RED, then perform a Right Rotation on the Parent. This converts the situation into one of the other cases.`, [w.id, x.parent.id]);
+          this.takeSnapshot(`Case 1: Sibling is RED. We recolor Sibling (BLACK) and Parent (RED), then Right Rotate the Parent.`, [w.id, x.parent.id]);
           this.rightRotate(x.parent);
           w = x.parent.left;
+        
+          this.takeSnapshot(`Rotation complete. Now we proceed to resolve the new configuration.`);
         }
 
         if (w.right.color === 'BLACK' && w.left.color === 'BLACK') {
           w.color = 'RED';
           x = x.parent;
-          this.takeSnapshot(`Case 2: The Sibling is BLACK, and both of its children are BLACK. We remove one black weight from both the Sibling (making it RED) and Node ${x.isNil ? '(NIL)' : x.val}, shifting the 'extra black' weight up to their Parent.`, [w.id, x.id]);
+          this.takeSnapshot(`Case 2: Sibling is BLACK and its children are BLACK. We color Sibling RED and move the 'extra black' up to the Parent.`, [w.id, x.id]);
         } else {
           if (w.left.color === 'BLACK') {
             w.right.color = 'BLACK';
             w.color = 'RED';
-            this.takeSnapshot(`Case 3: The Sibling is BLACK, its left child is BLACK, but its right (inner) child is RED. We swap colors and perform a Left Rotation on the Sibling to transform into Case 4.`, [w.id, w.right.id]);
+            this.takeSnapshot(`Case 3: Sibling is BLACK, left child is BLACK, right is RED. We swap colors and Left Rotate the Sibling.`, [w.id, w.right.id]);
             this.leftRotate(w);
             w = x.parent.left;
+            
+            this.takeSnapshot(`Rotation complete. We transition to Case 4.`);
           }
           w.color = x.parent.color;
           x.parent.color = 'BLACK';
           w.left.color = 'BLACK';
-          this.takeSnapshot(`Case 4: The Sibling is BLACK, and its left (outer) child is RED. We recolor and perform a Right Rotation on the Parent. This perfectly redistributes the 'extra black' weight across the branches.`, [w.id, x.parent.id, w.left.id]);
+          this.takeSnapshot(`Case 4: Sibling is BLACK, left child is RED. We do terminal recoloring before the final Right Rotate.`, [w.id, x.parent.id, w.left.id]);
           this.rightRotate(x.parent);
           x = this.root;
         }
       }
     }
+    
+   
     if (x.color === 'RED') {
-      this.takeSnapshot(`The node absorbing the 'extra black' weight was RED. We simply recolor it to BLACK, safely absorbing the weight and restoring the Black Height invariant everywhere.`);
+      this.takeSnapshot(`The node absorbing the 'extra black' weight was RED. We simply recolor it to BLACK.`);
     }
     x.color = 'BLACK';
+    
+   
+    this.takeSnapshot(`The tree has been perfectly rebalanced! The deletion process is completely finished.`);
   }
 
   // --- ROTATIONS ---
